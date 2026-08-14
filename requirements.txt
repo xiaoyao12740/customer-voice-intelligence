@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+streamlit
+pandas
+numpy
+scikit-learn
+scipy
+matplotlib
+joblib
+sqlalchemy
+pymysql
+python-multipart
+

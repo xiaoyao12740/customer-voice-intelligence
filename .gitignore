@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.env
+data/raw/
+data/processed/
+data/*.zip
+models/*.joblib
+outputs/*
+voc.db
+*.sqlite3
+!models/.gitkeep
+!outputs/.gitkeep
+!data/README.md
