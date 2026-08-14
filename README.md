@@ -1,5 +1,7 @@
 # Customer Voice Intelligence / 客户之声智能分析平台
 
+[![CI](https://github.com/xiaoyao12740/customer-voice-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/xiaoyao12740/customer-voice-intelligence/actions/workflows/ci.yml)
+
 [中文](#中文说明) · [English](#english)
 
 An end-to-end, evidence-driven NLP portfolio project for sentiment analysis, topic routing, complaint-risk triage, batch analytics and API serving.
@@ -21,19 +23,21 @@ An end-to-end, evidence-driven NLP portfolio project for sentiment analysis, top
 
 ### 真实实验结果
 
-固定随机种子 42；按 `sentiment + source` 分层切分为 2,087/447/448 条训练、验证和测试数据。下表均来自本仓库代码在留出测试集上的实际运行结果。
+固定随机种子 42；按 `sentiment + source` 分层切分为 2,087/447/448 条训练、验证和测试数据。候选模型只在验证集比较；产品要求模型提供原生概率，因此在符合条件的模型中按验证集 Macro F1 选择 Logistic Regression。随后用训练集和验证集重训，最终测试集只评估一次。
 
-| 模型 | Accuracy | Macro F1 | 5-fold CV Macro F1 |
+| 模型 | 验证集 Accuracy | 验证集 Macro F1 | 5-fold CV Macro F1 |
 |---|---:|---:|---:|
-| LinearSVC | 83.48% | **83.48%** | 82.36% ± 2.13% |
-| Logistic Regression | 82.81% | 82.81% | 81.88% ± 2.12% |
-| MultinomialNB | 82.37% | 82.36% | 82.06% ± 1.82% |
-| SGD Logistic | 82.14% | 82.13% | 81.64% ± 2.22% |
-| Dummy | 50.00% | 33.33% | — |
+| Logistic Regression | **85.01%** | **85.01%** | 81.88% ± 2.12% |
+| MultinomialNB | 84.56% | 84.56% | 82.06% ± 1.82% |
+| LinearSVC | 82.77% | 82.77% | 82.36% ± 2.13% |
+| SGD Logistic | 82.10% | 82.09% | 81.64% ± 2.22% |
+| Dummy | 49.89% | 33.28% | 33.37% ± 0.03% |
 
-生产示例选择 Logistic Regression：其 Macro F1 只比 LinearSVC 低 0.67 个百分点，但能直接输出概率，便于置信度展示和阈值扩展。其 ROC-AUC 为 91.48%，PR-AUC 为 92.87%，正类 F1 的 95% Bootstrap 区间为 78.84%–86.32%。
+锁定 Logistic Regression 后的最终测试结果为：Macro F1 84.82%、ROC-AUC 92.25%、PR-AUC 93.40%、Brier score 0.1164；正类 F1 的 95% Bootstrap 区间为 80.95%–88.25%。原生 `predict_proba` 不是“已经校准”的同义词，因此仓库同时输出 calibration curve 和 Brier score，置信度仍只用于辅助判断。
 
 ![Model comparison](docs/screenshots/model-comparison.png)
+
+![Calibration curve](docs/screenshots/calibration-curve.png)
 
 ### 界面与模型证据
 
@@ -122,7 +126,7 @@ uvicorn api.main:app --host 0.0.0.0 --port 8005
 streamlit run dashboard/app.py --server.port 8505
 ```
 
-The production example uses Logistic Regression for native probabilities, accepting a 0.67 percentage-point macro-F1 trade-off versus LinearSVC. See [experiment details](docs/EXPERIMENTS.md), [model card](docs/MODEL_CARD.md), and [API examples](docs/API.md).
+Candidate models are compared on validation only. Logistic Regression wins validation macro F1 among models that satisfy the native-probability product requirement; it is then refit on train+validation and evaluated once on the untouched test split. See [experiment details](docs/EXPERIMENTS.md), [model card](docs/MODEL_CARD.md), and [API examples](docs/API.md).
 
 ### Repository layout
 

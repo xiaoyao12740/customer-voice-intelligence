@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from api.schemas import BatchRequest, PredictRequest
-from database.service import analytics_summary, init_database, save_prediction
+from database.service import analytics_summary, init_database, save_prediction, save_predictions
 from src.config import load_config
 from src.inference import load_bundle, predict, predict_batch
 
@@ -38,11 +38,11 @@ def predict_one(request: PredictRequest):
 def predict_many(request: BatchRequest):
     try:
         results = predict_batch(request.texts)
-        for result in results: save_prediction(result, request.source)
-        return {"count": len(results), "predictions": results}
+        review_ids = save_predictions(results, request.source)
+        predictions = [{"review_id": review_id, **result} for review_id, result in zip(review_ids, results)]
+        return {"count": len(predictions), "predictions": predictions}
     except (ValueError, FileNotFoundError) as error: raise HTTPException(status_code=422, detail=str(error)) from error
 
 
 @app.get("/analytics/summary")
 def summary(): return analytics_summary()
-

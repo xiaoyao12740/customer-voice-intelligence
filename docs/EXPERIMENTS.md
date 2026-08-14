@@ -7,28 +7,29 @@
 - Split: train 2,087, validation 447, test 448
 - Stratification: sentiment and source; random seed 42
 - Features: word and character TF-IDF, maximum 30,000 features
-- Validation: 5-fold stratified cross-validation on the training split
-- Test policy: the held-out test split is used for the reported final comparison
+- Development: 5-fold stratified cross-validation on train; candidate comparison on validation
+- Selection rule: highest validation macro F1 among non-dummy models with native `predict_proba`
+- Test policy: after selection, refit on train+validation and evaluate the selected model once on test
 
 数据处理、划分和模型参数均由代码固定，可从原始下载重新生成，不依赖手工修改的 CSV。
 
 ## Results / 结果
 
-| Model | Accuracy | Precision (+) | Recall (+) | F1 (+) | Macro F1 | ROC-AUC | PR-AUC |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| LinearSVC | 0.8348 | — | — | — | 0.8348 | — | — |
-| Logistic Regression | 0.8281 | 0.8210 | 0.8393 | 0.8300 | 0.8281 | 0.9148 | 0.9287 |
-| MultinomialNB | 0.8237 | — | — | — | 0.8236 | — | — |
-| SGD Logistic | 0.8214 | — | — | — | 0.8213 | — | — |
-| Dummy | 0.5000 | — | — | — | 0.3333 | — | — |
+| Model | Validation Accuracy | Validation Macro F1 | 5-fold CV Macro F1 | Native probability |
+|---|---:|---:|---:|---:|
+| Logistic Regression | 0.8501 | 0.8501 | 0.8188 ± 0.0212 | yes |
+| MultinomialNB | 0.8456 | 0.8456 | 0.8206 ± 0.0182 | yes |
+| LinearSVC | 0.8277 | 0.8277 | 0.8236 ± 0.0213 | no |
+| SGD Logistic | 0.8210 | 0.8209 | 0.8164 ± 0.0222 | yes |
+| Dummy | 0.4989 | 0.3328 | 0.3337 ± 0.0003 | yes, excluded baseline |
 
 完整的逐模型数值由 `outputs/benchmark.csv` 生成。该目录被忽略，以确保结果必须通过训练代码复现。
 
 ## Selection / 模型选择
 
-LinearSVC achieved the best test macro F1. Logistic Regression was selected for the serving example because it provides calibrated-like native probabilities without an extra calibration stage and loses only 0.0067 macro F1 on this split. Confidence values should still not be interpreted as guaranteed correctness.
+Logistic Regression was selected before test evaluation because it had the highest validation macro F1 among candidates satisfying the native-probability product requirement. It was refit on train+validation, then evaluated once on test: macro F1 0.8482, ROC-AUC 0.9225, PR-AUC 0.9340, and Brier score 0.1164.
 
-LinearSVC 的 Macro F1 最高；服务层选择 Logistic Regression，是为了直接输出概率并保持实现简洁。该概率用于产品演示，不代表严格校准后的真实正确率。
+Logistic Regression 在满足原生概率要求的候选模型中取得最高验证集 Macro F1，因此在接触测试集结果之前即被选定。随后使用 train+validation 重训，并只在 test 上执行一次最终评估。原生概率不等同于已经校准，需结合 calibration curve 与 Brier score 解读。
 
 ## Reproduction / 复现
 
@@ -37,4 +38,4 @@ python scripts/prepare_data.py
 python -m src.benchmark
 ```
 
-Generated artifacts include metrics JSON, benchmark CSV, error cases, confusion matrix, feature coefficients and dataset-distribution charts.
+Generated artifacts include metrics JSON, validation benchmark CSV, test error cases, confusion matrix, calibration curve, feature coefficients and dataset-distribution charts.
