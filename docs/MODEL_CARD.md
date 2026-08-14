@@ -11,16 +11,19 @@ The model classifies short English customer-review sentences as positive or nega
 - TF-IDF feature union
 - Logistic Regression classifier
 - Version: 1.0.0
-- Held-out macro F1: 0.8281
-- ROC-AUC: 0.9148
-- Positive-class F1 95% bootstrap CI: [0.7884, 0.8632]
+- Selection: validation macro F1 among native-probability candidates
+- Held-out macro F1: 0.8482
+- ROC-AUC: 0.9225
+- PR-AUC: 0.9340
+- Brier score: 0.1164
+- Positive-class F1 95% bootstrap CI: [0.8095, 0.8825]
 
 ## Limitations / 局限
 
 - English only; binary labels only; no neutral or mixed-sentiment class.
 - Small, short-sentence dataset collected from Amazon, IMDb and Yelp.
 - Domain shift, sarcasm, negation and evolving language may reduce performance.
-- Probability output has not undergone a dedicated calibration study.
+- Native probability output is not guaranteed to be calibrated; inspect the included calibration curve and Brier score before threshold-dependent use.
 - Topic and risk outputs are deterministic keyword rules and must not be interpreted as learned predictions.
 
 ## Responsible use / 负责任使用

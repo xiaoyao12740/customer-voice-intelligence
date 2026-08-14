@@ -7,7 +7,6 @@
     "validation_ratio": 0.15,
     "test_ratio": 0.15
   },
-  "model": {"production": "logistic_regression", "max_features": 30000},
+  "model": {"selection_metric": "validation_macro_f1", "require_native_probability": true, "max_features": 30000},
   "outputs": {"root": "outputs", "model_path": "models/sentiment_model.joblib"}
 }
-

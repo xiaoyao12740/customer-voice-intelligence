@@ -25,6 +25,16 @@ def sentiment_probability(model, text: str, prediction: str) -> float:
     return positive if prediction == "positive" else 1 - positive
 
 
+def _sentiment_confidences(model, texts, predictions) -> np.ndarray:
+    if hasattr(model, "predict_proba"):
+        classes = list(model.classes_)
+        probabilities = model.predict_proba(texts)
+        return np.asarray([probabilities[index, classes.index(label)] for index, label in enumerate(predictions)])
+    scores = np.asarray(model.decision_function(texts), dtype=float)
+    positive = 1 / (1 + np.exp(-np.clip(scores, -30, 30)))
+    return np.where(np.asarray(predictions) == "positive", positive, 1 - positive)
+
+
 def predict(text: str, model_path: str | None = None) -> dict:
     clean = validate_text(text); bundle = load_bundle(model_path); model = bundle["model"]
     sentiment = str(model.predict([clean])[0]); confidence = sentiment_probability(model, clean, sentiment)
@@ -34,5 +44,17 @@ def predict(text: str, model_path: str | None = None) -> dict:
 
 def predict_batch(texts: list[str], model_path: str | None = None) -> list[dict]:
     if not texts or len(texts) > 5000: raise ValueError("Batch must contain between 1 and 5000 texts.")
-    return [predict(text, model_path) for text in texts]
-
+    clean_texts = [validate_text(text) for text in texts]
+    bundle = load_bundle(model_path); model = bundle["model"]
+    sentiments = model.predict(clean_texts)
+    confidences = _sentiment_confidences(model, clean_texts, sentiments)
+    results = []
+    for text, clean, sentiment, confidence in zip(texts, clean_texts, sentiments, confidences):
+        sentiment = str(sentiment); confidence = float(confidence)
+        topic, topic_keywords = classify_topic(clean)
+        risk = assess_risk(clean, sentiment, confidence, topic)
+        results.append({"text": text, "clean_text": clean, "sentiment": sentiment, "confidence": confidence,
+            "topic": topic, "topic_keywords": topic_keywords, "risk": risk["level"], "risk_score": risk["score"],
+            "risk_keywords": risk["matched_keywords"], "model_name": bundle["model_name"],
+            "model_version": bundle["version"], "disclaimer": risk["disclaimer"]})
+    return results
