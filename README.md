@@ -91,6 +91,13 @@ Docker 运行：
 docker compose up --build
 ```
 
+Published image / 已发布镜像：
+
+```powershell
+docker pull ghcr.io/xiaoyao12740/customer-voice-intelligence:v1.0.0
+docker run --rm -p 8005:8005 ghcr.io/xiaoyao12740/customer-voice-intelligence:v1.0.0
+```
+
 测试与复现：
 
 ```powershell
