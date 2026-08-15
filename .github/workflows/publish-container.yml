@@ -70,3 +70,42 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Pull published image and run API smoke test
+        shell: bash
+        run: |
+          image="${REGISTRY}/${IMAGE_NAME}:${{ steps.version.outputs.version }}"
+          container="customer-voice-post-pull-smoke"
+
+          # Ensure the smoke test can only use the image fetched from GHCR.
+          docker image rm "$image" >/dev/null 2>&1 || true
+          docker pull "$image"
+          docker run --detach --name "$container" --publish 127.0.0.1:8005:8005 "$image"
+
+          ready=false
+          for attempt in {1..60}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8005/health >/dev/null; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          if [[ "$ready" != true ]]; then
+            docker logs "$container"
+            exit 1
+          fi
+
+          curl --fail --silent --show-error http://127.0.0.1:8005/health \
+            | python -c 'import json, sys; assert json.load(sys.stdin)["status"] == "ok"'
+          curl --fail --silent --show-error http://127.0.0.1:8005/model-info \
+            | python -c 'import json, sys; data=json.load(sys.stdin); assert data["model_name"] and data["version"] and data["labels"]'
+          curl --fail --silent --show-error \
+            --header 'Content-Type: application/json' \
+            --data '{"text":"The service was fast and helpful."}' \
+            http://127.0.0.1:8005/predict \
+            | python -c 'import json, sys; data=json.load(sys.stdin); assert data["sentiment"] in {"negative", "positive"}; assert 0 <= data["confidence"] <= 1'
+
+      - name: Clean up smoke-test container
+        if: always()
+        shell: bash
+        run: docker rm --force customer-voice-post-pull-smoke >/dev/null 2>&1 || true
