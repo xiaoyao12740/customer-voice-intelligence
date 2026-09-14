@@ -152,3 +152,31 @@ tests/                Unit and API tests
 ### License
 
 Project code is released under the MIT License. The UCI dataset retains its own CC BY 4.0 license and attribution requirements.
+
+## 在 IDE 中的运行方式
+
+> 项目入口是 `src/benchmark.py`，且使用 `from src.xxx import ...` 包导入，**在 VSCode 里直接点 ▶ 运行会报错 `ModuleNotFoundError: No module named 'src'`**，必须以模块方式运行。
+
+- **VSCode（终端，在项目根目录执行）**：
+  ```
+  cd D:\桌面\ML-DL-Projects\05-customer-voice-intelligence
+  D:\桌面\ML-DL-Projects\.venv\Scripts\python.exe -m src.benchmark
+  ```
+- **PyCharm**：**不能直接点 Run 运行 `src/benchmark.py`**（入口使用 `from src.xxx import ...` 包导入，直接运行会报 `ModuleNotFoundError: No module named 'src'`）。两种可行方式：
+  - **PyCharm 内置终端**（Alt+F12，venv 已自动激活）：`python -m src.benchmark`（推荐）
+  - **Run Configuration**：新建 Python 配置 → 运行方式选 `module`，模块名填 `src.benchmark`，工作目录填项目根 `D:\桌面\ML-DL-Projects\05-customer-voice-intelligence`。
+
+## 使用 Docker 运行
+
+本机已部署成功，通过 docker-compose 管理（基础镜像与依赖源已调整为国内可访问源，构建无需科学上网）。
+
+```bash
+# 在项目目录下执行
+docker compose up -d --build   # 启动（首次构建较慢，之后秒起）
+docker compose down            # 停止
+docker compose logs -f         # 查看日志
+```
+
+- 访问地址：http://localhost:8505
+- 与其他项目端口互不冲突，可同时运行
+

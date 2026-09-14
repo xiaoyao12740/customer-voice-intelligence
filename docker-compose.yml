@@ -1,6 +1,6 @@
 services:
   mysql:
-    image: mysql:8.4
+    image: docker.m.daocloud.io/library/mysql:8.4
     environment:
       MYSQL_DATABASE: voc_platform
       MYSQL_USER: voc_user
